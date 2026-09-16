@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <title>Audio Stream Tuner - Ultra-light Spec Inspector</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&family=Inter:wght@400;600;700;800&display=swap');
+
+            body {
+                font-family: 'Inter', sans-serif;
+                background-color: #0b0c0e;
+                background-image: radial-gradient(circle at 50% 30%, #171a21 0%, #0b0c0e 100%);
+                color: #d1d5db;
+                user-select: none;
+                -webkit-user-select: none;
+            }
+
+            .digital-font {
+                font-family: 'Share Tech Mono', monospace;
+            }
+
+            .brand-font {
+                font-family: 'Orbitron', sans-serif;
+            }
+
+            .tuner-chassis {
+                background: linear-gradient(165deg, #252830 0%, #16181c 45%, #0f1013 100%);
+                box-shadow:
+                    0 25px 50px -12px rgba(0, 0, 0, 0.95),
+                    inset 0 1px 1px rgba(255, 255, 255, 0.18),
+                    inset 0 -1px 2px rgba(0, 0, 0, 0.8),
+                    0 0 0 1px #333740;
+            }
+
+            .brushed-panel {
+                background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(0, 0, 0, 0.25) 100%), #1a1d22;
+                box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.05);
+                border: 1px solid #2a2e36;
+            }
+
+            .hardware-screw {
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #6b7280 0%, #1f2937 100%);
+                box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 1px 2px rgba(0, 0, 0, 0.8);
+                position: relative;
+            }
+
+            .hardware-screw::after {
+                content: '';
+                position: absolute;
+                top: 4px;
+                left: 2px;
+                width: 6px;
+                height: 2px;
+                background-color: #111827;
+                transform: rotate(40deg);
+            }
+
+            .gauge-dial-container {
+                background: radial-gradient(ellipse at 50% 90%, #fffde8 0%, #eedfba 55%, #c8b98b 100%);
+                box-shadow:
+                    inset 0 4px 12px rgba(0, 0, 0, 0.65),
+                    inset 0 0 25px rgba(217, 185, 96, 0.3);
+                border: 2px solid #141619;
+            }
+
+            .glass-reflection {
+                background: linear-gradient(135deg,
+                        rgba(255, 255, 255, 0.22) 0%,
+                        rgba(255, 255, 255, 0.03) 40%,
+                        rgba(255, 255, 255, 0) 60%);
+            }
+
+            .led-bezel {
+                width: 13px;
+                height: 13px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #9ca3af 0%, #374151 100%);
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+                padding: 2px;
+                flex-shrink: 0;
+            }
+
+            .led-bulb {
+                width: 100%;
+                height: 100%;
+                border-radius: 50%;
+                background-color: #1a1e24;
+                box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.9);
+                transition: all 0.25s ease-in-out;
+            }
+
+            .led-red.active {
+                background: radial-gradient(circle at 35% 35%, #fca5a5 0%, #ef4444 55%, #7f1d1d 100%);
+                box-shadow: 0 0 8px #ef4444, 0 0 2px #f87171, inset 0 1px 2px rgba(255, 255, 255, 0.8);
+            }
+
+            .led-green.active {
+                background: radial-gradient(circle at 35% 35%, #86efac 0%, #22c55e 55%, #14532d 100%);
+                box-shadow: 0 0 8px #22c55e, 0 0 2px #4ade80, inset 0 1px 2px rgba(255, 255, 255, 0.8);
+            }
+
+            .drop-zone-dashed {
+                border: 2px dashed #374151;
+                transition: all 0.2s ease;
+            }
+
+            .drop-zone-dashed:hover,
+            .drop-zone-dashed.drag-active {
+                border-color: #3b82f6;
+                background-color: rgba(59, 130, 246, 0.04);
+            }
+        </style>
+    </head>
+
+    <body class="min-h-screen flex items-center justify-center p-3 sm:p-6">
+        <div class="w-full max-w-md tuner-chassis rounded-3xl p-5 sm:p-6 relative shadow-2xl border border-gray-800 overflow-hidden">
+            <div class="absolute top-3 left-3 hardware-screw"></div>
+            <div class="absolute top-3 right-3 hardware-screw"></div>
+            <div class="absolute bottom-3 left-3 hardware-screw"></div>
+            <div class="absolute bottom-3 right-3 hardware-screw"></div>
+            <div class="flex justify-between items-center mb-4 px-1 pt-0.5 border-b border-gray-800/80 pb-3">
+                <div class="flex items-center space-x-2">
+                    <div class="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_#3b82f6]"></div>
+                    <h1 class="text-sm sm:text-base tracking-wider text-gray-100 font-black brand-font uppercase"> AUDIO TUNER <span class="text-[11px] text-blue-400 font-mono font-bold tracking-normal">AT-GCF26</span>
+                    </h1>
+                </div>
+                <div class="flex items-center space-x-1.5 bg-black/60 px-2.5 py-0.5 rounded-full border border-gray-800">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="text-[9px] text-gray-400 font-mono tracking-widest uppercase">CLIENT-SIDE</span>
+                </div>
+            </div>
+            <div class="relative w-full gauge-dial-container rounded-xl overflow-hidden mb-4 p-2">
+                <div class="absolute inset-0 glass-reflection z-20 pointer-events-none"></div>
+                <svg viewBox="0 0 300 150" class="w-full h-auto select-none overflow-visible">
+                    <path d="M 76.3 73.4 A 90 90 0 0 1 223.7 73.4" fill="none" stroke="#3d3728" stroke-width="2" />
+                    <path d="M 131.3 37.0 A 90 90 0 0 1 168.7 37.0" fill="none" stroke="#16a34a" stroke-width="5" stroke-linecap="round" />
+                    <line x1="87.2" y1="72.3" x2="74.9" y2="62.0" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" />
+                    <text x="54" y="65" font-size="9" fill="#991b1b" font-family="'Share Tech Mono', monospace" font-weight="bold" text-anchor="end">LOW</text>
+                    <line x1="114.1" y1="48.0" x2="109.9" y2="38.9" stroke="#555" stroke-width="1.5" stroke-linecap="round" />
+                    <line x1="150" y1="26" x2="150" y2="35" stroke="#16a34a" stroke-width="3" stroke-linecap="round" />
+                    <text x="150" y="20" font-size="9.5" fill="#15803d" font-family="'Orbitron', sans-serif" font-weight="900" text-anchor="middle">MATCH</text>
+                    <line x1="185.9" y1="48.0" x2="190.1" y2="38.9" stroke="#555" stroke-width="1.5" stroke-linecap="round" />
+                    <line x1="212.8" y1="72.3" x2="225.1" y2="62.0" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" />
+                    <text x="246" y="65" font-size="9" fill="#991b1b" font-family="'Share Tech Mono', monospace" font-weight="bold" text-anchor="start">HIGH</text>
+                    <circle cx="95.2" cy="53.6" r="1.2" fill="#777" />
+                    <circle cx="130.5" cy="37.1" r="1.2" fill="#777" />
+                    <circle cx="169.5" cy="37.1" r="1.2" fill="#777" />
+                    <circle cx="204.8" cy="53.6" r="1.2" fill="#777" />
+                    <rect x="75" y="90" width="150" height="22" rx="4" fill="#111317" fill-opacity="0.9" stroke="#2d3138" stroke-width="1" />
+                    <text x="150" y="105" font-size="9.5" fill="#3b82f6" font-family="'Share Tech Mono', monospace" font-weight="bold" text-anchor="middle" id="status-text"> READY TO TUNE </text>
+                    <g transform="translate(150, 125)">
+                        <g id="tuner-needle" style="transform: rotate(-45deg); transition: transform 0.8s cubic-bezier(0.2, 1.3, 0.3, 1);">
+                            <line x1="1" y1="0" x2="1" y2="-80" stroke="rgba(0,0,0,0.2)" stroke-width="2.5" />
+                            <line x1="0" y1="0" x2="0" y2="-80" stroke="#dc2626" stroke-width="2" stroke-linecap="round" />
+                            <circle cx="0" cy="-80" r="1.2" fill="#fef08a" />
+                        </g>
+                        <circle cx="0" cy="0" r="11" fill="url(#pivot-gradient)" stroke="#18181b" stroke-width="1.5" />
+                        <circle cx="0" cy="0" r="4" fill="#52525b" />
+                    </g>
+                    <defs>
+                        <radialGradient id="pivot-gradient" cx="30%" cy="30%" r="70%">
+                            <stop offset="0%" stop-color="#9ca3af" />
+                            <stop offset="50%" stop-color="#3f3f46" />
+                            <stop offset="100%" stop-color="#111827" />
+                        </radialGradient>
+                    </defs>
+                </svg>
+            </div>
+            <div class="brushed-panel rounded-2xl p-3.5 mb-4 space-y-2.5">
+                <div class="text-[9px] font-mono text-gray-400 uppercase tracking-widest border-b border-gray-800 pb-1.5 flex justify-between items-center">
+                    <span>SPECIFICATIONS</span>
+                    <span>STATUS LED</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                    <div class="flex items-center space-x-2">
+                        <div class="flex items-center space-x-1">
+                            <div class="led-bezel">
+                                <div class="led-bulb led-green" id="led-format-green"></div>
+                            </div>
+                            <div class="led-bezel">
+                                <div class="led-bulb led-red" id="led-format-red"></div>
+                            </div>
+                        </div>
+                        <span class="font-semibold text-gray-200">Format: <span class="text-gray-400 font-normal">MP3 (.mp3)</span></span>
+                    </div>
+                    <span id="val-format" class="digital-font text-blue-400 font-semibold">---</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                    <div class="flex items-center space-x-2">
+                        <div class="flex items-center space-x-1">
+                            <div class="led-bezel">
+                                <div class="led-bulb led-green" id="led-duration-green"></div>
+                            </div>
+                            <div class="led-bezel">
+                                <div class="led-bulb led-red" id="led-duration-red"></div>
+                            </div>
+                        </div>
+                        <span class="font-semibold text-gray-200">Duration: <span class="text-gray-400 font-normal">&lt; 04:00</span></span>
+                    </div>
+                    <span id="val-duration" class="digital-font text-blue-400 font-semibold">--:--</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                    <div class="flex items-center space-x-2">
+                        <div class="flex items-center space-x-1">
+                            <div class="led-bezel">
+                                <div class="led-bulb led-green" id="led-bitrate-green"></div>
+                            </div>
+                            <div class="led-bezel">
+                                <div class="led-bulb led-red" id="led-bitrate-red"></div>
+                            </div>
+                        </div>
+                        <span class="font-semibold text-gray-200">Bitrate: <span class="text-gray-400 font-normal">&le; 320 kbps</span></span>
+                    </div>
+                    <span id="val-bitrate" class="digital-font text-blue-400 font-semibold">-- kbps</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                    <div class="flex items-center space-x-2">
+                        <div class="flex items-center space-x-1">
+                            <div class="led-bezel">
+                                <div class="led-bulb led-green" id="led-channels-green"></div>
+                            </div>
+                            <div class="led-bezel">
+                                <div class="led-bulb led-red" id="led-channels-red"></div>
+                            </div>
+                        </div>
+                        <span class="font-semibold text-gray-200">Channels: <span class="text-gray-400 font-normal">&le; 2.0 ch</span></span>
+                    </div>
+                    <span id="val-channels" class="digital-font text-blue-400 font-semibold">-- ch</span>
+                </div>
+            </div>
+            <div id="drop-zone" class="drop-zone-dashed rounded-2xl p-4 text-center cursor-pointer bg-black/20 hover:bg-blue-500/5 relative group">
+                <input type="file" id="file-input" accept="audio/mp3,audio/mpeg,.mp3" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-30">
+                <div class="flex flex-col items-center justify-center space-y-1 pointer-events-none">
+                    <div class="w-8 h-8 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform mb-0.5">
+                        <i class="fa-solid fa-file-audio text-sm"></i>
+                    </div>
+                    <p class="text-xs font-bold text-gray-200"> Drop MP3 file or click to browse </p>
+                    <p class="text-[10px] text-gray-400"> Zero Server Upload • Instant Local Audio Analysis </p>
+                </div>
+            </div>
+            <div id="file-info" class="mt-3 text-[10px] font-mono text-gray-400 flex justify-between items-center px-1 hidden border-t border-gray-800/80 pt-2">
+                <span class="truncate max-w-[220px]" id="file-name">filename.mp3</span>
+                <span id="file-size" class="text-blue-400 font-bold">0.0 MB</span>
+            </div>
+        </div>
+        <script>
+            const fileInput = document.getElementById('file-input');
+            const dropZone = document.getElementById('drop-zone');
+            const tunerNeedle = document.getElementById('tuner-needle');
+            const statusText = document.getElementById('status-text');
+            const valFormat = document.getElementById('val-format');
+            const valDuration = document.getElementById('val-duration');
+            const valBitrate = document.getElementById('val-bitrate');
+            const valChannels = document.getElementById('val-channels');
+            const ledFormatGreen = document.getElementById('led-format-green');
+            const ledFormatRed = document.getElementById('led-format-red');
+            const ledDurationGreen = document.getElementById('led-duration-green');
+            const ledDurationRed = document.getElementById('led-duration-red');
+            const ledBitrateGreen = document.getElementById('led-bitrate-green');
+            const ledBitrateRed = document.getElementById('led-bitrate-red');
+            const ledChannelsGreen = document.getElementById('led-channels-green');
+            const ledChannelsRed = document.getElementById('led-channels-red');
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add('drag-active');
+                }, false);
+            });
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('drag-active');
+                }, false);
+            });
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    processAudioFile(e.target.files[0]);
+                }
+            });
+            function resetUI() {
+                [
+                    ledFormatGreen, ledFormatRed, 
+                    ledDurationGreen, ledDurationRed, 
+                    ledBitrateGreen, ledBitrateRed,
+                    ledChannelsGreen, ledChannelsRed
+                ].forEach(led => {
+                    led.classList.remove('active');
+                });
+                tunerNeedle.style.transform = 'rotate(-45deg)';
+                statusText.textContent = 'ANALYZING AUDIO...';
+                valFormat.textContent = 'READING...';
+                valDuration.textContent = '--:--';
+                valBitrate.textContent = '-- kbps';
+                valChannels.textContent = '-- ch';
+            }
+            async function processAudioFile(file) {
+                resetUI();
+                document.getElementById('file-info').classList.remove('hidden');
+                document.getElementById('file-name').textContent = file.name;
+                document.getElementById('file-size').textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+                try {
+                    const audioData = await inspectAudioFast(file);
+                    evaluateAndDisplayResults(audioData, file);
+                } catch (err) {
+                    console.warn("Fast AudioContext parsing failed, using HTML5 Audio fallback:", err);
+                    fallbackAudioAnalysis(file);
+                }
+            }
+            function inspectAudioFast(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        const arrayBuffer = e.target.result;
+                        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                        if (!AudioCtx) {
+                            reject("AudioContext not supported");
+                            return;
+                        }
+                        const audioCtx = new AudioCtx();
+                        audioCtx.decodeAudioData(arrayBuffer, function(buffer) {
+                            const durationSec = buffer.duration;
+                            const channels = buffer.numberOfChannels;
+                            const sampleRate = buffer.sampleRate;
+                            let estimatedBitrate = 0;
+                            if (durationSec > 0) {
+                                estimatedBitrate = Math.round((file.size * 8) / (durationSec * 1000));
+                            }
+                            audioCtx.close();
+                            resolve({
+                                duration: durationSec,
+                                channels: channels,
+                                sampleRate: sampleRate,
+                                bitrate: estimatedBitrate
+                            });
+                        }, function(err) {
+                            audioCtx.close();
+                            reject(err);
+                        });
+                    };
+                    reader.onerror = function(err) {
+                        reject(err);
+                    };
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+            function fallbackAudioAnalysis(file) {
+                const audio = document.createElement('audio');
+                audio.preload = 'metadata';
+                const url = URL.createObjectURL(file);
+                audio.src = url;
+                audio.onloadedmetadata = function () {
+                    URL.revokeObjectURL(url);
+                    const duration = audio.duration;
+                    const estimatedBitrate = duration > 0 ? Math.round((file.size * 8) / (duration * 1000)) : 0;
+                    evaluateAndDisplayResults({
+                        duration: duration,
+                        channels: 2, 
+                        sampleRate: 44100,
+                        bitrate: estimatedBitrate
+                    }, file);
+                };
+                audio.onerror = function() {
+                    URL.revokeObjectURL(url);
+                    statusText.textContent = 'READ ERROR';
+                    valFormat.textContent = 'INVALID';
+                    tunerNeedle.style.transform = 'rotate(-45deg)';
+                    [ledFormatRed, ledDurationRed, ledBitrateRed, ledChannelsRed].forEach(l => l.classList.add('active'));
+                };
+            }
+            function evaluateAndDisplayResults(data, file) {
+                const fileNameLower = (file.name || "").toLowerCase();
+                const isMp3Extension = fileNameLower.endsWith('.mp3');
+                const isMp3Mime = file.type === 'audio/mpeg' || file.type === 'audio/mp3' || file.type === '';
+                const isMp3 = isMp3Extension && isMp3Mime;
+                const maxDuration = 240; 
+                const isDurationValid = data.duration > 0 && data.duration < maxDuration;
+                const bitrateVal = data.bitrate || 0;
+                const isBitrateValid = bitrateVal > 0 && bitrateVal <= 336;
+                const channelsVal = data.channels || 0;
+                const isChannelsValid = channelsVal > 0 && channelsVal <= 2;
+                valFormat.textContent = isMp3 ? 'MP3 (MPEG Audio)' : 'NON-MP3';
+                valDuration.textContent = formatTime(data.duration);
+                valBitrate.textContent = bitrateVal > 0 ? `${bitrateVal} kbps` : 'N/A';
+                let channelText = 'N/A';
+                if (channelsVal === 1) channelText = '1.0 ch (Mono)';
+                else if (channelsVal === 2) channelText = '2.0 ch (Stereo)';
+                else if (channelsVal > 2) channelText = `${channelsVal}.0 ch (Surround)`;
+                valChannels.textContent = channelText;
+                if (isMp3) ledFormatGreen.classList.add('active');
+                else ledFormatRed.classList.add('active');
+                if (isDurationValid) ledDurationGreen.classList.add('active');
+                else ledDurationRed.classList.add('active');
+                if (isBitrateValid) ledBitrateGreen.classList.add('active');
+                else ledBitrateRed.classList.add('active');
+                if (isChannelsValid) ledChannelsGreen.classList.add('active');
+                else ledChannelsRed.classList.add('active');
+                const isAllMatch = isMp3 && isDurationValid && isBitrateValid && isChannelsValid;
+                let needleAngle = 0;
+                if (isAllMatch) {
+                    needleAngle = 0; 
+                    statusText.textContent = 'IN SPECIFICATION';
+                } else {
+                    let offset = 0;
+                    if (!isMp3) offset -= 15;
+                    if (!isDurationValid) {
+                        const overSecs = data.duration - maxDuration;
+                        offset += Math.min(15, 8 + (overSecs / 10));
+                    }
+                    if (!isBitrateValid) offset += 12;
+                    if (!isChannelsValid) offset += 15;
+                    needleAngle = Math.max(-45, Math.min(45, offset));
+                    statusText.textContent = 'OUT OF SPECIFICATION';
+                }
+                tunerNeedle.style.transform = `rotate(${needleAngle}deg)`;
+            }
+            function formatTime(seconds) {
+                if (!seconds || isNaN(seconds)) return '00:00';
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+        </script>
+    </body>
+
+</html>
